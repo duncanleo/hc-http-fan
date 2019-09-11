@@ -1,22 +1,18 @@
 package main
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"log"
-	"os"
 
+	"github.com/brutella/hc"
+	"github.com/brutella/hc/accessory"
 	"github.com/duncanleo/hc-http-fan/config"
 )
 
 func main() {
-	configFile, err := os.Open("config.json")
+	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Panic(err)
 	}
-	configFileBytes, _ := ioutil.ReadAll(configFile)
-	var cfg config.Config
-	err = json.Unmarshal(configFileBytes, &cfg)
 	if err != nil {
 		log.Panic(err)
 	}
