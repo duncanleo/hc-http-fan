@@ -8,11 +8,16 @@ import (
 
 // Config represents a configuration file
 type Config struct {
+	Pin  string `json:"pin"`
+	Fans []Fan  `json:"fans"`
+}
+
+// Fan represents a fan accessory
+type Fan struct {
 	Name             string `json:"name"`
 	Manufacturer     string `json:"manufacturer"`
 	Model            string `json:"model"`
 	Serial           string `json:"serial"`
-	Pin              string `json:"pin"`
 	IsDefaultPowerOn bool   `json:"default_power_on"`
 	DefaultSpeed     int    `json:"default_speed"`
 	Speeds           []struct {

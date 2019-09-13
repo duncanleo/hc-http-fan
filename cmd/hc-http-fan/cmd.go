@@ -16,11 +16,6 @@ import (
 	"github.com/duncanleo/hc-http-fan/config"
 )
 
-var (
-	power bool
-	speed int
-)
-
 func main() {
 	hcLog.Debug.Enable()
 
@@ -28,80 +23,92 @@ func main() {
 	if err != nil {
 		log.Panic(err)
 	}
-	power = cfg.IsDefaultPowerOn
-	speed = cfg.DefaultSpeed
 
-	sort.SliceStable(cfg.Speeds, func(i, j int) bool {
-		return cfg.Speeds[i].Speed < cfg.Speeds[j].Speed
-	})
+	var accessories []*accessory.Accessory
 
-	info := accessory.Info{
-		Name:         cfg.Name,
-		Manufacturer: cfg.Manufacturer,
-		Model:        cfg.Model,
-		SerialNumber: cfg.Serial,
+	for _, cfgFan := range cfg.Fans {
+		var (
+			power = cfgFan.IsDefaultPowerOn
+			speed = cfgFan.DefaultSpeed
+		)
+
+		sort.SliceStable(cfgFan.Speeds, func(i, j int) bool {
+			return cfgFan.Speeds[i].Speed < cfgFan.Speeds[j].Speed
+		})
+
+		info := accessory.Info{
+			Name:         cfgFan.Name,
+			Manufacturer: cfgFan.Manufacturer,
+			Model:        cfgFan.Model,
+			SerialNumber: cfgFan.Serial,
+		}
+
+		ac := accessory.New(info, accessory.TypeFan)
+
+		fan := service.NewFan()
+
+		fan.On.OnValueGet(func() interface{} { return power })
+		fan.On.OnValueRemoteUpdate(func(p bool) {
+			power = p
+		})
+		rotationSpeed := characteristic.NewRotationSpeed()
+		rotationSpeed.OnValueGet(func() interface{} {
+			return speed
+		})
+		rotationSpeed.OnValueRemoteUpdate(func(v float64) {
+			speed = int(v)
+
+			closestSpeedIndex := 0
+			for i, s := range cfgFan.Speeds {
+				if s.Speed > speed {
+					closestSpeedIndex = i
+					break
+				}
+			}
+
+			if closestSpeedIndex > 0 &&
+				closestSpeedIndex+1 < len(cfgFan.Speeds) {
+				lowerSpeed := cfgFan.Speeds[closestSpeedIndex].Speed
+				upperSpeed := cfgFan.Speeds[closestSpeedIndex+1].Speed
+				if upperSpeed-speed < speed-lowerSpeed {
+					closestSpeedIndex++
+				}
+			}
+
+			closestSpeed := cfgFan.Speeds[closestSpeedIndex]
+
+			log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
+
+			resp, err := http.Get(closestSpeed.URL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println(err)
+			}
+
+			log.Println(string(body))
+		})
+		fan.AddCharacteristic(rotationSpeed.Characteristic)
+
+		ac.AddService(fan.Service)
+
+		accessories = append(accessories, ac)
 	}
-
-	ac := accessory.New(info, accessory.TypeFan)
-
-	fan := service.NewFan()
-
-	fan.On.OnValueGet(func() interface{} { return power })
-	fan.On.OnValueRemoteUpdate(func(p bool) {
-		power = p
-	})
-	rotationSpeed := characteristic.NewRotationSpeed()
-	rotationSpeed.OnValueGet(func() interface{} {
-		return speed
-	})
-	rotationSpeed.OnValueRemoteUpdate(func(v float64) {
-		speed = int(v)
-
-		closestSpeedIndex := 0
-		for i, s := range cfg.Speeds {
-			if s.Speed > speed {
-				closestSpeedIndex = i
-				break
-			}
-		}
-
-		log.Printf("Fishcake %d", cfg.Speeds[closestSpeedIndex].Speed)
-
-		if closestSpeedIndex > 0 &&
-			closestSpeedIndex+1 < len(cfg.Speeds) {
-			lowerSpeed := cfg.Speeds[closestSpeedIndex].Speed
-			upperSpeed := cfg.Speeds[closestSpeedIndex+1].Speed
-			if upperSpeed-speed < speed-lowerSpeed {
-				closestSpeedIndex++
-			}
-		}
-
-		closestSpeed := cfg.Speeds[closestSpeedIndex]
-
-		log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
-
-		resp, err := http.Get(closestSpeed.URL)
-		if err != nil {
-			log.Println(err)
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println(err)
-		}
-
-		log.Println(string(body))
-	})
-	fan.AddCharacteristic(rotationSpeed.Characteristic)
-
-	ac.AddService(fan.Service)
 
 	hcConfig := hc.Config{
 		Pin:         cfg.Pin,
 		StoragePath: "storage",
 	}
 
-	t, err := hc.NewIPTransport(hcConfig, ac)
+	var subAccs []*accessory.Accessory
+	if len(accessories) > 1 {
+		subAccs = accessories[1:]
+	}
+
+	t, err := hc.NewIPTransport(hcConfig, accessories[0], subAccs...)
 	if err != nil {
 		log.Panic(err)
 	}
