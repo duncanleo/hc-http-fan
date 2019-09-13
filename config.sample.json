@@ -6,6 +6,8 @@
       "manufacturer": "Some Brand",
       "model": "Some Model",
       "serial": "Some Serial",
+      "default_power_on": true,
+      "default_speed": 30,
       "speeds": [
         {
           "speed": 90,
