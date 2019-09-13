@@ -3,6 +3,7 @@ module github.com/duncanleo/hc-http-fan
 go 1.12
 
 require (
+	github.com/brutella/dnssd v1.1.0
 	github.com/brutella/hc v1.2.0
 	github.com/miekg/dns v1.1.17 // indirect
 	golang.org/x/crypto v0.0.0-20190911031432-227b76d455e7 // indirect
