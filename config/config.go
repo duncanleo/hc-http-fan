@@ -12,6 +12,7 @@ type Config struct {
 	Manufacturer     string `json:"manufacturer"`
 	Model            string `json:"model"`
 	Serial           string `json:"serial"`
+	Pin              string `json:"pin"`
 	IsDefaultPowerOn bool   `json:"default_power_on"`
 	DefaultSpeed     int    `json:"default_speed"`
 	Speeds           []struct {

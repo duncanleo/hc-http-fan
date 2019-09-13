@@ -97,7 +97,7 @@ func main() {
 	ac.AddService(fan.Service)
 
 	hcConfig := hc.Config{
-		Pin:         "00102003",
+		Pin:         cfg.Pin,
 		StoragePath: "storage",
 	}
 
