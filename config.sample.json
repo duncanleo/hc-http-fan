@@ -1,5 +1,7 @@
 {
   "pin": "00102003",
+  "storage_path": "storage",
+  "port": "51234",
   "fans": [
     {
       "name": "Fan",

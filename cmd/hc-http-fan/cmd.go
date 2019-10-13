@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sort"
+	"strconv"
 
 	"github.com/brutella/hc/characteristic"
 
@@ -95,9 +96,15 @@ func main() {
 		accessories = append(accessories, ac)
 	}
 
+	var portStr = strconv.Itoa(cfg.Port)
+	if cfg.Port == 0 {
+		portStr = ""
+	}
+
 	hcConfig := hc.Config{
 		Pin:         cfg.Pin,
-		StoragePath: "storage",
+		StoragePath: cfg.StoragePath,
+		Port:        portStr,
 	}
 
 	var subAccs []*accessory.Accessory

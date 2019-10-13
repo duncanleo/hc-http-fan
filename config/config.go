@@ -8,8 +8,10 @@ import (
 
 // Config represents a configuration file
 type Config struct {
-	Pin  string `json:"pin"`
-	Fans []Fan  `json:"fans"`
+	Pin         string `json:"pin"`
+	StoragePath string `json:"storage_path"`
+	Port        int    `json:"port"`
+	Fans        []Fan  `json:"fans"`
 }
 
 // Fan represents a fan accessory
