@@ -48,6 +48,26 @@ func main() {
 		fan.On.OnValueGet(func() interface{} { return power })
 		fan.On.OnValueRemoteUpdate(func(p bool) {
 			power = p
+
+			var url = cfgFan.Power.OffURL
+
+			if p {
+				url = cfgFan.Power.OnURL
+			}
+
+			if len(url) > 0 {
+				resp, err := http.Get(url)
+				if err != nil {
+					log.Println(err)
+				}
+
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Println(err)
+				}
+
+				log.Println(string(body))
+			}
 		})
 		rotationSpeed := characteristic.NewRotationSpeed()
 		rotationSpeed.OnValueGet(func() interface{} {

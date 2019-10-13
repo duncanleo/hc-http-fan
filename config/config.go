@@ -22,7 +22,11 @@ type Fan struct {
 	Serial           string `json:"serial"`
 	IsDefaultPowerOn bool   `json:"default_power_on"`
 	DefaultSpeed     int    `json:"default_speed"`
-	Speeds           []struct {
+	Power            struct {
+		OnURL  string `json:"on_url"`
+		OffURL string `json:"off_url"`
+	} `json:"power"`
+	Speeds []struct {
 		URL   string `json:"url"`
 		Speed int    `json:"speed"`
 	} `json:"speeds"`

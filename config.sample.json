@@ -10,6 +10,10 @@
       "serial": "Some Serial",
       "default_power_on": true,
       "default_speed": 30,
+      "power": {
+        "on_url": "",
+        "off_url": ""
+      },
       "speeds": [
         {
           "speed": 90,
