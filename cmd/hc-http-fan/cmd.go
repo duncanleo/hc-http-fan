@@ -12,13 +12,10 @@ import (
 
 	"github.com/brutella/hc"
 	"github.com/brutella/hc/accessory"
-	hcLog "github.com/brutella/hc/log"
 	"github.com/duncanleo/hc-http-fan/config"
 )
 
 func main() {
-	hcLog.Debug.Enable()
-
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Panic(err)
