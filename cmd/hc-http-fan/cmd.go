@@ -16,88 +16,39 @@ import (
 	"github.com/duncanleo/hc-http-fan/config"
 )
 
-func main() {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		log.Panic(err)
+func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
+	var (
+		power = cfgFan.IsDefaultPowerOn
+		speed = cfgFan.DefaultSpeed
+	)
+
+	sort.SliceStable(cfgFan.Speeds, func(i, j int) bool {
+		return cfgFan.Speeds[i].Speed < cfgFan.Speeds[j].Speed
+	})
+
+	info := accessory.Info{
+		Name:         cfgFan.Name,
+		Manufacturer: cfgFan.Manufacturer,
+		Model:        cfgFan.Model,
+		SerialNumber: cfgFan.Serial,
 	}
 
-	var accessories []*accessory.Accessory
+	ac := accessory.New(info, accessory.TypeFan)
 
-	for _, cfgFan := range cfg.Fans {
-		var (
-			power = cfgFan.IsDefaultPowerOn
-			speed = cfgFan.DefaultSpeed
-		)
+	fan := service.NewFan()
 
-		sort.SliceStable(cfgFan.Speeds, func(i, j int) bool {
-			return cfgFan.Speeds[i].Speed < cfgFan.Speeds[j].Speed
-		})
+	fan.On.OnValueGet(func() interface{} { return power })
+	fan.On.OnValueRemoteUpdate(func(p bool) {
+		power = p
 
-		info := accessory.Info{
-			Name:         cfgFan.Name,
-			Manufacturer: cfgFan.Manufacturer,
-			Model:        cfgFan.Model,
-			SerialNumber: cfgFan.Serial,
+		var url = cfgFan.Power.OffURL
+
+		if p {
+			url = cfgFan.Power.OnURL
 		}
 
-		ac := accessory.New(info, accessory.TypeFan)
-
-		fan := service.NewFan()
-
-		fan.On.OnValueGet(func() interface{} { return power })
-		fan.On.OnValueRemoteUpdate(func(p bool) {
-			power = p
-
-			var url = cfgFan.Power.OffURL
-
-			if p {
-				url = cfgFan.Power.OnURL
-			}
-
-			if len(url) > 0 {
-				resp, err := http.Get(url)
-				if err != nil {
-					log.Println(err)
-				}
-
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					log.Println(err)
-				}
-
-				log.Println(string(body))
-			}
-		})
-		rotationSpeed := characteristic.NewRotationSpeed()
-		rotationSpeed.OnValueGet(func() interface{} {
-			return speed
-		})
-		rotationSpeed.OnValueRemoteUpdate(func(v float64) {
-			speed = int(v)
-
-			closestSpeedIndex := 0
-			for i, s := range cfgFan.Speeds {
-				if s.Speed > speed {
-					closestSpeedIndex = i
-					break
-				}
-			}
-
-			if closestSpeedIndex > 0 &&
-				closestSpeedIndex+1 < len(cfgFan.Speeds) {
-				lowerSpeed := cfgFan.Speeds[closestSpeedIndex].Speed
-				upperSpeed := cfgFan.Speeds[closestSpeedIndex+1].Speed
-				if upperSpeed-speed < speed-lowerSpeed {
-					closestSpeedIndex++
-				}
-			}
-
-			closestSpeed := cfgFan.Speeds[closestSpeedIndex]
-
-			log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
-
-			resp, err := http.Get(closestSpeed.URL)
+		if len(url) > 0 {
+			resp, err := http.Get(url)
 			if err != nil {
 				log.Println(err)
 			}
@@ -108,12 +59,64 @@ func main() {
 			}
 
 			log.Println(string(body))
-		})
-		fan.AddCharacteristic(rotationSpeed.Characteristic)
+		}
+	})
+	rotationSpeed := characteristic.NewRotationSpeed()
+	rotationSpeed.OnValueGet(func() interface{} {
+		return speed
+	})
+	rotationSpeed.OnValueRemoteUpdate(func(v float64) {
+		speed = int(v)
 
-		ac.AddService(fan.Service)
+		closestSpeedIndex := 0
+		for i, s := range cfgFan.Speeds {
+			if s.Speed > speed {
+				closestSpeedIndex = i
+				break
+			}
+		}
 
-		accessories = append(accessories, ac)
+		if closestSpeedIndex > 0 &&
+			closestSpeedIndex+1 < len(cfgFan.Speeds) {
+			lowerSpeed := cfgFan.Speeds[closestSpeedIndex].Speed
+			upperSpeed := cfgFan.Speeds[closestSpeedIndex+1].Speed
+			if upperSpeed-speed < speed-lowerSpeed {
+				closestSpeedIndex++
+			}
+		}
+
+		closestSpeed := cfgFan.Speeds[closestSpeedIndex]
+
+		log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
+
+		resp, err := http.Get(closestSpeed.URL)
+		if err != nil {
+			log.Println(err)
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Println(string(body))
+	})
+	fan.AddCharacteristic(rotationSpeed.Characteristic)
+
+	ac.AddService(fan.Service)
+	return ac
+}
+
+func main() {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	var accessories []*accessory.Accessory
+
+	for _, cfgFan := range cfg.Fans {
+		accessories = append(accessories, createFanAccessory(cfgFan))
 	}
 
 	var portStr = strconv.Itoa(cfg.Port)
