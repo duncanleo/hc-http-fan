@@ -133,7 +133,12 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 
 	ac := accessory.New(info, accessory.TypeLightbulb)
 
-	light := service.NewLightbulb()
+	light := service.Lightbulb{}
+	light.Service = service.New(service.TypeLightbulb)
+	light.On = characteristic.NewOn()
+	light.AddCharacteristic(light.On.Characteristic)
+	light.Brightness = characteristic.NewBrightness()
+	light.AddCharacteristic(light.Brightness.Characteristic)
 
 	var updateLightToggleBrightness = func(v int) {
 		currentIndex := cfgLight.GetClosestToggleBrightnessIndex(brightness)
