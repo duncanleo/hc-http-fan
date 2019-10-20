@@ -3,9 +3,11 @@ package main
 import (
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/brutella/hc/characteristic"
 
@@ -107,6 +109,147 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 	return ac
 }
 
+func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
+	var (
+		power      = cfgLight.IsDefaultPowerOn
+		brightness = cfgLight.DefaultBrightness
+	)
+
+	info := accessory.Info{
+		Name:         cfgLight.Name,
+		Manufacturer: cfgLight.Manufacturer,
+		Model:        cfgLight.Model,
+		SerialNumber: cfgLight.Serial,
+	}
+
+	switch cfgLight.Type {
+	case config.LightTypeToggle:
+		brightness = cfgLight.GetToggleBrightnessLevels()[cfgLight.GetClosestToggleBrightnessIndex(cfgLight.DefaultBrightness)]
+		break
+	default:
+		cfgLight.Type = config.LightTypeBasic
+		log.Printf("The light '%s' has unknown type '%s' specified, assuming BASIC.\n", cfgLight.Name, cfgLight.Type)
+	}
+
+	ac := accessory.New(info, accessory.TypeLightbulb)
+
+	light := service.NewLightbulb()
+
+	var updateLightToggleBrightness = func(v int) {
+		currentIndex := cfgLight.GetClosestToggleBrightnessIndex(brightness)
+		targetIndex := cfgLight.GetClosestToggleBrightnessIndex(v)
+
+		numSteps := 0
+
+		if targetIndex == currentIndex {
+			numSteps = 0
+		} else if !cfgLight.Toggle.Ascending && targetIndex > currentIndex {
+			numSteps = targetIndex - currentIndex
+		} else if !cfgLight.Toggle.Ascending {
+			numSteps = cfgLight.Toggle.LevelCount - int(math.Abs(float64(targetIndex)-float64(currentIndex)))
+		} else if cfgLight.Toggle.Ascending && targetIndex < currentIndex {
+			numSteps = currentIndex - targetIndex
+		} else if cfgLight.Toggle.Ascending {
+			numSteps = cfgLight.Toggle.LevelCount - int(math.Abs(float64(currentIndex)-float64(targetIndex)))
+		}
+
+		log.Printf("%d (i=%d) => %d(i=%d), We're gonna toggle %d times\n", brightness, currentIndex, v, targetIndex, numSteps)
+
+		brightness = cfgLight.GetToggleBrightnessLevels()[targetIndex]
+
+		for i := 0; i < numSteps; i++ {
+			resp, err := http.Get(cfgLight.Toggle.URL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println(err)
+			}
+
+			log.Println(string(body))
+			time.Sleep(1 * time.Second)
+		}
+	}
+
+	light.On.OnValueGet(func() interface{} { return power })
+	light.On.OnValueRemoteUpdate(func(p bool) {
+		power = p
+
+		switch cfgLight.Type {
+		case config.LightTypeToggle:
+			log.Printf("Set power of light '%s' to %v\n", cfgLight.Name, p)
+			if !p {
+				updateLightToggleBrightness(0)
+			} else {
+				levels := cfgLight.GetToggleBrightnessLevels()
+				targetBrightness := levels[0]
+				if cfgLight.Toggle.Ascending {
+					targetBrightness = levels[len(levels)-1]
+				}
+				updateLightToggleBrightness(targetBrightness)
+			}
+			break
+		case config.LightTypeBasic:
+			var url = cfgLight.Basic.Power.OffURL
+
+			if p {
+				url = cfgLight.Basic.Power.OnURL
+			}
+
+			if len(url) > 0 {
+				resp, err := http.Get(url)
+				if err != nil {
+					log.Println(err)
+				}
+
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					log.Println(err)
+				}
+
+				log.Println(string(body))
+			}
+			break
+		}
+	})
+
+	light.Brightness.OnValueGet(func() interface{} {
+		return brightness
+	})
+	light.Brightness.OnValueRemoteUpdate(func(v int) {
+		switch cfgLight.Type {
+		case config.LightTypeToggle:
+			updateLightToggleBrightness(v)
+			return
+		case config.LightTypeBasic:
+			targetIndex := cfgLight.GetClosestBrightnessIndex(v)
+
+			resp, err := http.Get(cfgLight.Basic.BrightnessLevels[targetIndex].URL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				log.Println(err)
+			}
+
+			log.Println(string(body))
+			break
+		default:
+			log.Printf("Unsupported type %s\n", cfgLight.Type)
+			break
+		}
+
+		brightness = v
+	})
+
+	ac.AddService(light.Service)
+	return ac
+}
+
 func main() {
 	cfg, err := config.GetConfig()
 	if err != nil {
@@ -117,6 +260,10 @@ func main() {
 
 	for _, cfgFan := range cfg.Fans {
 		accessories = append(accessories, createFanAccessory(cfgFan))
+	}
+
+	for _, cfgLight := range cfg.Lights {
+		accessories = append(accessories, createLightAccessory(cfgLight))
 	}
 
 	var portStr = strconv.Itoa(cfg.Port)
