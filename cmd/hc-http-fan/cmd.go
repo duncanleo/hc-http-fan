@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -55,12 +54,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 				log.Println(err)
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Println(err)
-			}
-
-			log.Println(string(body))
+			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
 		}
 	})
 	rotationSpeed := characteristic.NewRotationSpeed()
@@ -96,12 +90,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 			log.Println(err)
 		}
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Println(err)
-		}
-
-		log.Println(string(body))
+		log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
 	})
 	fan.AddCharacteristic(rotationSpeed.Characteristic)
 
@@ -168,12 +157,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 				log.Println(err)
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Println(err)
-			}
-
-			log.Println(string(body))
+			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Toggle.URL)
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -209,12 +193,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 					log.Println(err)
 				}
 
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					log.Println(err)
-				}
-
-				log.Println(string(body))
+				log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
 			}
 			break
 		}
@@ -236,12 +215,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 				log.Println(err)
 			}
 
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				log.Println(err)
-			}
-
-			log.Println(string(body))
+			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Basic.BrightnessLevels[targetIndex].URL)
 			break
 		default:
 			log.Printf("Unsupported type %s\n", cfgLight.Type)
