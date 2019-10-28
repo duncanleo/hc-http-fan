@@ -56,6 +56,21 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 
 			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
 		}
+
+		if p {
+			// Restore previous speed
+			closestSpeedIndex := cfgFan.GetClosestSpeedIndex(speed)
+			closestSpeed := cfgFan.Speeds[closestSpeedIndex]
+
+			log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
+
+			resp, err := http.Get(closestSpeed.URL)
+			if err != nil {
+				log.Println(err)
+			}
+
+			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
+		}
 	})
 	rotationSpeed := characteristic.NewRotationSpeed()
 	rotationSpeed.OnValueGet(func() interface{} {
@@ -64,22 +79,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 	rotationSpeed.OnValueRemoteUpdate(func(v float64) {
 		speed = int(v)
 
-		closestSpeedIndex := 0
-		for i, s := range cfgFan.Speeds {
-			if s.Speed > speed {
-				closestSpeedIndex = i
-				break
-			}
-		}
-
-		if closestSpeedIndex > 0 &&
-			closestSpeedIndex+1 < len(cfgFan.Speeds) {
-			lowerSpeed := cfgFan.Speeds[closestSpeedIndex].Speed
-			upperSpeed := cfgFan.Speeds[closestSpeedIndex+1].Speed
-			if upperSpeed-speed < speed-lowerSpeed {
-				closestSpeedIndex++
-			}
-		}
+		closestSpeedIndex := cfgFan.GetClosestSpeedIndex(speed)
 
 		closestSpeed := cfgFan.Speeds[closestSpeedIndex]
 

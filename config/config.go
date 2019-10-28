@@ -34,6 +34,26 @@ type Fan struct {
 	} `json:"speeds"`
 }
 
+func (f Fan) GetClosestSpeedIndex(speed int) int {
+	closestIndex := 0
+	for i, s := range f.Speeds {
+		if s.Speed > speed {
+			closestIndex = i
+			break
+		}
+	}
+
+	if closestIndex > 0 &&
+		closestIndex+1 < len(f.Speeds) {
+		lower := f.Speeds[closestIndex].Speed
+		upper := f.Speeds[closestIndex+1].Speed
+		if upper-speed < speed-lower {
+			closestIndex++
+		}
+	}
+	return closestIndex
+}
+
 // LightType an enum type to represent type of light
 type LightType string
 
