@@ -94,6 +94,15 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 	})
 	fan.AddCharacteristic(rotationSpeed.Characteristic)
 
+	currentFanState := characteristic.NewCurrentFanState()
+	currentFanState.OnValueGet(func() interface{} {
+		if !power {
+			return characteristic.CurrentFanStateIdle
+		}
+		return characteristic.CurrentFanStateBlowingAir
+	})
+	fan.AddCharacteristic(currentFanState.Characteristic)
+
 	ac.AddService(fan.Service)
 	return ac
 }
