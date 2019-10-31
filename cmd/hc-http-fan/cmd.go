@@ -52,6 +52,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 			resp, err := http.Get(url)
 			if err != nil {
 				log.Println(err)
+				return
 			}
 
 			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
@@ -67,6 +68,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 			resp, err := http.Get(closestSpeed.URL)
 			if err != nil {
 				log.Println(err)
+				return
 			}
 
 			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
@@ -88,6 +90,7 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 		resp, err := http.Get(closestSpeed.URL)
 		if err != nil {
 			log.Println(err)
+			return
 		}
 
 		log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
@@ -164,6 +167,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 			resp, err := http.Get(cfgLight.Toggle.URL)
 			if err != nil {
 				log.Println(err)
+				return
 			}
 
 			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Toggle.URL)
@@ -200,6 +204,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 				resp, err := http.Get(url)
 				if err != nil {
 					log.Println(err)
+					return
 				}
 
 				log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
@@ -222,6 +227,7 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 			resp, err := http.Get(cfgLight.Basic.BrightnessLevels[targetIndex].URL)
 			if err != nil {
 				log.Println(err)
+				return
 			}
 
 			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Basic.BrightnessLevels[targetIndex].URL)
