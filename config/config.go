@@ -12,8 +12,20 @@ type Config struct {
 	Pin         string  `json:"pin"`
 	StoragePath string  `json:"storage_path"`
 	Port        int     `json:"port"`
+	BrokerURI   string  `json:"broker_uri"`
+	ClientID    string  `json:"client_id"`
 	Fans        []Fan   `json:"fans"`
 	Lights      []Light `json:"lights"`
+}
+
+type MQTTPublish struct {
+	Topic   string `json:"topic"`
+	Payload string `json:"payload"`
+}
+
+type FanSpeed struct {
+	MQTTPublish
+	Speed int `json:"speed"`
 }
 
 // Fan represents a fan accessory
@@ -25,13 +37,10 @@ type Fan struct {
 	IsDefaultPowerOn bool   `json:"default_power_on"`
 	DefaultSpeed     int    `json:"default_speed"`
 	Power            struct {
-		OnURL  string `json:"on_url"`
-		OffURL string `json:"off_url"`
+		On  MQTTPublish `json:"on"`
+		Off MQTTPublish `json:"off"`
 	} `json:"power"`
-	Speeds []struct {
-		URL   string `json:"url"`
-		Speed int    `json:"speed"`
-	} `json:"speeds"`
+	Speeds []FanSpeed `json:"speeds"`
 }
 
 func (f Fan) GetClosestSpeedIndex(speed int) int {
@@ -76,20 +85,20 @@ type Light struct {
 
 	Basic struct {
 		BrightnessLevels []struct {
-			URL        string `json:"url"`
-			Brightness int    `json:"brightness"`
+			MQTTPublish
+			Brightness int `json:"brightness"`
 		} `json:"brightness_levels"`
 
 		Power struct {
-			OnURL  string `json:"on_url"`
-			OffURL string `json:"off_url"`
+			On  MQTTPublish `json:"on"`
+			Off MQTTPublish `json:"off"`
 		} `json:"power"`
 	} `json:"basic"` // Used only for BASIC light types
 
 	Toggle struct {
-		Ascending  bool   `json:"ascending"`
-		URL        string `json:"url"`
-		LevelCount int    `json:"level_count"` // Number of toggle brightness levels, INCLUDING an OFF mode.
+		MQTTPublish
+		Ascending  bool `json:"ascending"`
+		LevelCount int  `json:"level_count"` // Number of toggle brightness levels, INCLUDING an OFF mode.
 	} `json:"toggle"` // Used only for TOGGLE light types
 }
 

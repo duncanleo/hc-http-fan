@@ -1,14 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
-	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/brutella/hc/characteristic"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 
 	"github.com/brutella/hc/service"
 
@@ -16,6 +18,25 @@ import (
 	"github.com/brutella/hc/accessory"
 	"github.com/duncanleo/hc-http-fan/config"
 )
+
+var (
+	mqttClient mqtt.Client
+)
+
+func connect(clientID string, uri *url.URL) (mqtt.Client, error) {
+	var opts = mqtt.NewClientOptions()
+	opts.AddBroker(fmt.Sprintf("tcp://%s", uri.Host))
+	opts.SetUsername(uri.User.Username())
+	password, _ := uri.User.Password()
+	opts.SetPassword(password)
+	opts.SetClientID(clientID)
+
+	var client = mqtt.NewClient(opts)
+	var token = client.Connect()
+	for !token.WaitTimeout(3 * time.Second) {
+	}
+	return client, token.Error()
+}
 
 func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 	var (
@@ -42,20 +63,15 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 	fan.On.OnValueRemoteUpdate(func(p bool) {
 		power = p
 
-		var url = cfgFan.Power.OffURL
+		var target = cfgFan.Power.Off
 
 		if p {
-			url = cfgFan.Power.OnURL
+			target = cfgFan.Power.On
 		}
 
-		if len(url) > 0 {
-			resp, err := http.Get(url)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
+		token := mqttClient.Publish(target.Topic, 0, false, target.Payload)
+		if token.Error() != nil {
+			log.Println(token.Error())
 		}
 
 		if p {
@@ -65,13 +81,10 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 
 			log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
 
-			resp, err := http.Get(closestSpeed.URL)
-			if err != nil {
-				log.Println(err)
-				return
+			token := mqttClient.Publish(closestSpeed.Topic, 0, false, closestSpeed.Payload)
+			if token.Error() != nil {
+				log.Println(token.Error())
 			}
-
-			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
 		}
 	})
 	rotationSpeed := characteristic.NewRotationSpeed()
@@ -87,13 +100,10 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 
 		log.Printf("Requested speed %d, mapped to %d", speed, closestSpeed.Speed)
 
-		resp, err := http.Get(closestSpeed.URL)
-		if err != nil {
-			log.Println(err)
-			return
+		token := mqttClient.Publish(closestSpeed.Topic, 0, false, closestSpeed.Payload)
+		if token.Error() != nil {
+			log.Println(token.Error())
 		}
-
-		log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, closestSpeed.URL)
 	})
 	fan.AddCharacteristic(rotationSpeed.Characteristic)
 
@@ -164,13 +174,11 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 		brightness = cfgLight.GetToggleBrightnessLevels()[targetIndex]
 
 		for i := 0; i < numSteps; i++ {
-			resp, err := http.Get(cfgLight.Toggle.URL)
-			if err != nil {
-				log.Println(err)
-				return
+			token := mqttClient.Publish(cfgLight.Toggle.Topic, 0, false, cfgLight.Toggle.Payload)
+			if token.Error() != nil {
+				log.Println(token.Error())
 			}
 
-			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Toggle.URL)
 			time.Sleep(1 * time.Second)
 		}
 	}
@@ -194,20 +202,15 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 			}
 			break
 		case config.LightTypeBasic:
-			var url = cfgLight.Basic.Power.OffURL
+			var target = cfgLight.Basic.Power.Off
 
 			if p {
-				url = cfgLight.Basic.Power.OnURL
+				target = cfgLight.Basic.Power.On
 			}
 
-			if len(url) > 0 {
-				resp, err := http.Get(url)
-				if err != nil {
-					log.Println(err)
-					return
-				}
-
-				log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, url)
+			token := mqttClient.Publish(target.Topic, 0, false, target.Payload)
+			if token.Error() != nil {
+				log.Println(token.Error())
 			}
 			break
 		}
@@ -223,14 +226,13 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 			return
 		case config.LightTypeBasic:
 			targetIndex := cfgLight.GetClosestBrightnessIndex(v)
+			target := cfgLight.Basic.BrightnessLevels[targetIndex]
 
-			resp, err := http.Get(cfgLight.Basic.BrightnessLevels[targetIndex].URL)
-			if err != nil {
-				log.Println(err)
-				return
+			token := mqttClient.Publish(target.Topic, 0, false, target.Payload)
+			if token.Error() != nil {
+				log.Println(token.Error())
 			}
 
-			log.Printf("HTTP %d (GET '%s')\n", resp.StatusCode, cfgLight.Basic.BrightnessLevels[targetIndex].URL)
 			break
 		default:
 			log.Printf("Unsupported type %s\n", cfgLight.Type)
@@ -248,6 +250,16 @@ func main() {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		log.Panic(err)
+	}
+
+	mqttURI, err := url.Parse(cfg.BrokerURI)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mqttClient, err = connect(cfg.ClientID, mqttURI)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	var accessories []*accessory.Accessory
