@@ -10,17 +10,26 @@
       "default_power_on": true,
       "default_speed": 30,
       "power": {
-        "on_url": "",
-        "off_url": ""
+        "on": {
+          "topic": "some-topic",
+          "payload": "yay!"
+        },
+        "off": {
+          "topic": "some-topic",
+          "payload": "yay!"
+        }
       },
       "speeds": [
         {
           "speed": 90,
-          "url": ""
+          "topic": "some-topic",
+          "payload": "yay!"
+
         },
         {
           "speed": 10,
-          "url": ""
+          "topic": "some-topic",
+          "payload": "yay!"
         }
       ]
     }    
