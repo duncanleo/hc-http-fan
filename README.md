@@ -1,5 +1,5 @@
-# hc-http-fan
-This is a CLI tool built with [hc](https://github.com/brutella/hc) that emulates a HomeKit fan accessory. It makes use of HTTP calls to set fan speeds.
+# hc-mqtt-fan
+This is a CLI tool built with [hc](https://github.com/brutella/hc) that emulates a HomeKit fan accessory.
 
 ### Supported HomeKit fan accessory features
 - Rotation speed

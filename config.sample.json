@@ -1,7 +1,6 @@
 {
   "pin": "00102003",
-  "storage_path": "storage",
-  "port": "51234",
+  "storage_path": "hc-mqtt-fan-storage",
   "fans": [
     {
       "name": "Fan",

@@ -16,7 +16,7 @@ import (
 
 	"github.com/brutella/hc"
 	"github.com/brutella/hc/accessory"
-	"github.com/duncanleo/hc-http-fan/config"
+	"github.com/duncanleo/hc-mqtt-fan/config"
 )
 
 var (
