@@ -59,7 +59,7 @@ func (f Fan) GetClosestSpeedIndex(speed int) int {
 	f.sortSpeeds()
 	closestIndex := 0
 	for i, s := range f.Speeds {
-		if s.Speed > speed {
+		if s.Speed >= speed {
 			closestIndex = i
 			break
 		}
@@ -122,7 +122,7 @@ type Light struct {
 func (l Light) GetClosestBrightnessIndex(brightness int) int {
 	closestIndex := 0
 	for i, b := range l.Basic.BrightnessLevels {
-		if b.Brightness > brightness {
+		if b.Brightness >= brightness {
 			closestIndex = i
 			break
 		}
