@@ -5,7 +5,6 @@ import (
 	"log"
 	"math"
 	"net/url"
-	"sort"
 	"strconv"
 	"time"
 
@@ -43,10 +42,6 @@ func createFanAccessory(cfgFan config.Fan) *accessory.Accessory {
 		power = cfgFan.IsDefaultPowerOn
 		speed = cfgFan.DefaultSpeed
 	)
-
-	sort.SliceStable(cfgFan.Speeds, func(i, j int) bool {
-		return cfgFan.Speeds[i].Speed < cfgFan.Speeds[j].Speed
-	})
 
 	info := accessory.Info{
 		Name:         cfgFan.Name,

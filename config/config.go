@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"sort"
 )
 
 // Config represents a configuration file
@@ -48,7 +49,14 @@ type Fan struct {
 	Speeds []FanSpeed `json:"speeds"`
 }
 
+func (f Fan) sortSpeeds() {
+	sort.SliceStable(f.Speeds, func(i, j int) bool {
+		return f.Speeds[i].Speed < f.Speeds[j].Speed
+	})
+}
+
 func (f Fan) GetClosestSpeedIndex(speed int) int {
+	f.sortSpeeds()
 	closestIndex := 0
 	for i, s := range f.Speeds {
 		if s.Speed > speed {
