@@ -71,6 +71,8 @@ const (
 	LightTypeToggle LightType = "toggle"
 	// LightTypeBasic represents lights that have specific URLs to call for OFF, ON, and brightness levels
 	LightTypeBasic LightType = "basic"
+	// LightTypeSwitch represents a light that only has ON and OFF.
+	LightTypeSwitch LightType = "switch"
 )
 
 // Light represents a light accessory
@@ -100,6 +102,11 @@ type Light struct {
 		Ascending  bool `json:"ascending"`
 		LevelCount int  `json:"level_count"` // Number of toggle brightness levels, INCLUDING an OFF mode.
 	} `json:"toggle"` // Used only for TOGGLE light types
+
+	Switch struct {
+		On  MQTTPublish `json:"on"`
+		Off MQTTPublish `json:"off"`
+	} `json:"switch"`
 }
 
 func (l Light) GetClosestBrightnessIndex(brightness int) int {

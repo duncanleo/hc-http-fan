@@ -137,6 +137,8 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 	case config.LightTypeToggle:
 		brightness = cfgLight.GetToggleBrightnessLevels()[cfgLight.GetClosestToggleBrightnessIndex(cfgLight.DefaultBrightness)]
 		break
+	case config.LightTypeSwitch:
+		break
 	default:
 		cfgLight.Type = config.LightTypeBasic
 		log.Printf("The light '%s' has unknown type '%s' specified, assuming BASIC.\n", cfgLight.Name, cfgLight.Type)
@@ -149,7 +151,15 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 	light.On = characteristic.NewOn()
 	light.AddCharacteristic(light.On.Characteristic)
 	light.Brightness = characteristic.NewBrightness()
-	light.AddCharacteristic(light.Brightness.Characteristic)
+
+	switch cfgLight.Type {
+	case config.LightTypeBasic:
+	case config.LightTypeToggle:
+		light.AddCharacteristic(light.Brightness.Characteristic)
+		break
+	case config.LightTypeSwitch:
+		break
+	}
 
 	var updateLightToggleBrightness = func(v int) {
 		currentIndex := cfgLight.GetClosestToggleBrightnessIndex(brightness)
@@ -213,33 +223,17 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 				log.Println(token.Error())
 			}
 			break
-		}
-	})
-
-	light.Brightness.OnValueGet(func() interface{} {
-		return brightness
-	})
-	light.Brightness.OnValueRemoteUpdate(func(v int) {
-		switch cfgLight.Type {
-		case config.LightTypeToggle:
-			updateLightToggleBrightness(v)
-			return
-		case config.LightTypeBasic:
-			targetIndex := cfgLight.GetClosestBrightnessIndex(v)
-			target := cfgLight.Basic.BrightnessLevels[targetIndex]
-
+		case config.LightTypeSwitch:
+			target := cfgLight.Switch.Off
+			if p {
+				target = cfgLight.Switch.On
+			}
 			token := mqttClient.Publish(target.Topic, 0, false, target.Payload)
 			if token.Error() != nil {
 				log.Println(token.Error())
 			}
-
-			break
-		default:
-			log.Printf("Unsupported type %s\n", cfgLight.Type)
 			break
 		}
-
-		brightness = v
 	})
 
 	ac.AddService(light.Service)
