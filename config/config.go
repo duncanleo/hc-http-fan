@@ -23,6 +23,13 @@ type MQTTPublish struct {
 	Payload string `json:"payload"`
 }
 
+type Accessory struct {
+	Name         string `json:"name"`
+	Manufacturer string `json:"manufacturer"`
+	Model        string `json:"model"`
+	Serial       string `json:"serial"`
+}
+
 type FanSpeed struct {
 	MQTTPublish
 	Speed int `json:"speed"`
@@ -30,12 +37,9 @@ type FanSpeed struct {
 
 // Fan represents a fan accessory
 type Fan struct {
-	Name             string `json:"name"`
-	Manufacturer     string `json:"manufacturer"`
-	Model            string `json:"model"`
-	Serial           string `json:"serial"`
-	IsDefaultPowerOn bool   `json:"default_power_on"`
-	DefaultSpeed     int    `json:"default_speed"`
+	Accessory
+	IsDefaultPowerOn bool `json:"default_power_on"`
+	DefaultSpeed     int  `json:"default_speed"`
 	Power            struct {
 		On  MQTTPublish `json:"on"`
 		Off MQTTPublish `json:"off"`
@@ -77,10 +81,7 @@ const (
 
 // Light represents a light accessory
 type Light struct {
-	Name              string    `json:"name"`
-	Manufacturer      string    `json:"manufacturer"`
-	Model             string    `json:"model"`
-	Serial            string    `json:"serial"`
+	Accessory
 	IsDefaultPowerOn  bool      `json:"default_power_on"`
 	Type              LightType `json:"type"`
 	DefaultBrightness int       `json:"default_brightness"`
