@@ -193,6 +193,31 @@ func createLightAccessory(cfgLight config.Light) *accessory.Accessory {
 		}
 	}
 
+	light.Brightness.OnValueGet(func() interface{} {
+		return brightness
+	})
+
+	light.Brightness.OnValueRemoteUpdate(func(v int) {
+		switch cfgLight.Type {
+		case config.LightTypeToggle:
+			updateLightToggleBrightness(v)
+			return
+		case config.LightTypeBasic:
+			targetIndex := cfgLight.GetClosestBrightnessIndex(v)
+			target := cfgLight.Basic.BrightnessLevels[targetIndex]
+
+			token := mqttClient.Publish(target.Topic, 0, false, target.Payload)
+			if token.Error() != nil {
+				log.Println(token.Error())
+			}
+
+			break
+		default:
+			log.Printf("Unsupported type %s\n", cfgLight.Type)
+			break
+		}
+	})
+
 	light.On.OnValueGet(func() interface{} { return power })
 	light.On.OnValueRemoteUpdate(func(p bool) {
 		power = p
