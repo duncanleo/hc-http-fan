@@ -9,13 +9,14 @@ import (
 
 // Config represents a configuration file
 type Config struct {
-	Pin         string  `json:"pin"`
-	StoragePath string  `json:"storage_path"`
-	Port        int     `json:"port"`
-	BrokerURI   string  `json:"broker_uri"`
-	ClientID    string  `json:"client_id"`
-	Fans        []Fan   `json:"fans"`
-	Lights      []Light `json:"lights"`
+	Bridge      Accessory `json:"bridge"`
+	Pin         string    `json:"pin"`
+	StoragePath string    `json:"storage_path"`
+	Port        int       `json:"port"`
+	BrokerURI   string    `json:"broker_uri"`
+	ClientID    string    `json:"client_id"`
+	Fans        []Fan     `json:"fans"`
+	Lights      []Light   `json:"lights"`
 }
 
 type MQTTPublish struct {

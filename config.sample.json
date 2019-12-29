@@ -1,4 +1,10 @@
 {
+  "bridge": {
+    "name": "hc-mqtt-fan-bridge",
+    "manufacturer": "hc",
+    "model": "Some model",
+    "serial": "0000"
+  },
   "pin": "00102003",
   "storage_path": "hc-mqtt-fan-storage",
   "fans": [

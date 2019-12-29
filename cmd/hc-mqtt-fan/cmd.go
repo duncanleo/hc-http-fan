@@ -302,12 +302,16 @@ func main() {
 		Port:        portStr,
 	}
 
-	var subAccs []*accessory.Accessory
-	if len(accessories) > 1 {
-		subAccs = accessories[1:]
+	bridgeInfo := accessory.Info{
+		Name:         cfg.Bridge.Name,
+		Manufacturer: cfg.Bridge.Manufacturer,
+		Model:        cfg.Bridge.Model,
+		SerialNumber: cfg.Bridge.Serial,
 	}
 
-	t, err := hc.NewIPTransport(hcConfig, accessories[0], subAccs...)
+	bridge := accessory.NewBridge(bridgeInfo)
+
+	t, err := hc.NewIPTransport(hcConfig, bridge.Accessory, accessories...)
 	if err != nil {
 		log.Panic(err)
 	}
